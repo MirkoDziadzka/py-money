@@ -14,7 +14,7 @@ setuptools.setup(
     url="https://github.com/MirkoDziadzka/py-money",
     packages=setuptools.find_packages(),
     install_requires=[
-        'pyobjc>=6.2',
+        'applescript',
         ],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
