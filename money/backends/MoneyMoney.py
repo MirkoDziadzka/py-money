@@ -6,6 +6,10 @@ import json
 import applescript
 
 
+def serialize(obj):
+    if isinstance(obj, datetime.datetime):
+        return str(obj.date())
+
 def run_apple_script(script):
     res = applescript.run(script)
     if res.code > 0:
@@ -29,7 +33,7 @@ class Transaction:
         return self.data.get("accountNumber") or self.name
 
     def __repr__(self):
-        return json.dumps(self.data, sorted=True, indent=4)
+        return json.dumps(self.data, separators=(',', ':'), default=serialize)
 
 
 class Account:
