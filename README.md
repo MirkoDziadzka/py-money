@@ -7,10 +7,9 @@ A Python interface to MoneyMoney
 ```py
 import money
 
-instance = money.connect(money.MoneyMoney)
+instance = money.MoneyMoney()
 
 for account in instance.accounts():
-    for transaction in account.transactions():
-        if amount := transaction.amount > 0:
-	    print(f"Transfered {amount:.2f}€ from {account.name} to {transaction.payee})
+    for tx in account.transactions():
+        print(f"{account.name} -> {tx.payee}: {tx.amount:0.2f}")
 ```
