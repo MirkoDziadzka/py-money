@@ -1,6 +1,7 @@
 
 import datetime
 import plistlib
+import json
 
 import applescript
 
@@ -8,13 +9,12 @@ import applescript
 def run_apple_script(script):
     res = applescript.run(script)
     if res.code > 0:
-        raise Exception(f'AppleScript Error: {res.err["NSAppleScriptErrorMessage"]}')
+        raise Exception(f"Apple Script: {res.err}")
     return res.out
 
 class Transaction:
     def __init__(self, data):
         self.data = data
-        print(data)
 
     @property
     def amount(self):
@@ -26,13 +26,16 @@ class Transaction:
 
     @property
     def payee(self):
-        return self.data["accountNumber"]
+        return self.data.get("accountNumber") or self.name
+
+    def __repr__(self):
+        return json.dumps(self.data, sorted=True, indent=4)
 
 
 class Account:
     def __init__(self, data):
         self.data = data
-        self.tx_data = None
+        self.tx_data = dict(transactions=[])
 
     @property
     def name(self):
@@ -40,12 +43,13 @@ class Account:
 
     def transactions(self):
         now = datetime.datetime.now()
-        start = now - datetime.timedelta(days=7)
-        print(start, now)
+        start = now - datetime.timedelta(days=90)
         cmd = f'tell application "MoneyMoney" to export transactions from account "{self.data["accountNumber"]}" from date "{start.strftime("%d/%m/%Y")}" to data "{now.strftime("%d/%m/%Y")}" as "plist"'
-        print(cmd)
-        res = run_apple_script(cmd)
-        self.tx_data = plistlib.loads(res.encode("utf-8"))
+        try:
+            res = run_apple_script(cmd)
+            self.tx_data = plistlib.loads(res.encode("utf-8"))
+        except:
+            pass
         for tx in self.tx_data.get("transactions", []):
             yield Transaction(tx)
 
