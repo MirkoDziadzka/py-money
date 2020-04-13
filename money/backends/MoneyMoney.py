@@ -9,6 +9,7 @@ import applescript
 def serialize(obj):
     if isinstance(obj, datetime.datetime):
         return str(obj.date())
+    return str(obj)
 
 def run_apple_script(script):
     res = applescript.run(script)
@@ -17,8 +18,23 @@ def run_apple_script(script):
     return res.out
 
 class Transaction:
-    def __init__(self, data):
-        self.data = data
+    def __init__(self, account, data):
+        self.account = account
+        self.data = self.normalize(data)
+
+    @classmethod
+    def normalize(cls, data):
+        res = {}
+        for k,v in data.items():
+            if isinstance(v, datetime.datetime):
+                v = v.date()
+                if v <= datetime.date(year=1970, month=1, day=2):
+                    continue
+                pass
+            elif k == "comment":
+                continue
+            res[k] = v
+        return res
 
     @property
     def amount(self):
@@ -32,6 +48,23 @@ class Transaction:
     def payee(self):
         return self.data.get("accountNumber") or self.name
 
+    @property
+    def booked(self):
+        return self.data["booked"]
+
+    @property
+    def checkmark(self):
+        return self.data["checkmark"]
+
+    def set_checkmark(self, value):
+        assert isinstance(value, bool)
+        if self.data["checkmark"] != value:
+            txid = self.data["id"]
+            onoff = "on" if value else "off"
+            cmd = f'tell application "MoneyMoney" to set transaction id {txid} checkmark to "{onoff}"'
+            res = run_apple_script(cmd)
+            self.data["checkmark"] = value
+
     def __repr__(self):
         return json.dumps(self.data, separators=(',', ':'), default=serialize)
 
@@ -39,7 +72,6 @@ class Transaction:
 class Account:
     def __init__(self, data):
         self.data = data
-        self.tx_data = dict(transactions=[])
 
     @property
     def name(self):
@@ -49,13 +81,10 @@ class Account:
         now = datetime.datetime.now()
         start = now - datetime.timedelta(days=90)
         cmd = f'tell application "MoneyMoney" to export transactions from account "{self.data["accountNumber"]}" from date "{start.strftime("%d/%m/%Y")}" to data "{now.strftime("%d/%m/%Y")}" as "plist"'
-        try:
-            res = run_apple_script(cmd)
-            self.tx_data = plistlib.loads(res.encode("utf-8"))
-        except:
-            pass
-        for tx in self.tx_data.get("transactions", []):
-            yield Transaction(tx)
+        res = run_apple_script(cmd)
+        tx_data = plistlib.loads(res.encode("utf-8"))
+        for tx in tx_data.get("transactions", []):
+            yield Transaction(self, tx)
 
 
 class MoneyMoney:
