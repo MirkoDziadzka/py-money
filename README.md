@@ -16,7 +16,7 @@ for account in instance.accounts():
 
 A more complex example, where we only write new transactions.
 
-```
+```py
 for account in instance.accounts():
     for tx in account.transactions():
         if not tx.checkmark:
