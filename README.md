@@ -21,5 +21,5 @@ for account in instance.accounts():
     for tx in account.transactions():
         if not tx.checkmark:
 	    print(f"New transaction: {tx}")
-            tx.set_checkmark(True)
+            tx.set_checkmark()
 ```

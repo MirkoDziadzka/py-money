@@ -41,5 +41,5 @@ with open(FILENAME, "w") as fd:
             writer.writerow(row)
             if not tx.checkmark:
                 print(f"New transaction: {tx}")
-                tx.set_checkmark(True)
+                tx.set_checkmark(value=True)
 

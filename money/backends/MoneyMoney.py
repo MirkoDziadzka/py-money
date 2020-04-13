@@ -56,7 +56,7 @@ class Transaction:
     def checkmark(self):
         return self.data["checkmark"]
 
-    def set_checkmark(self, value):
+    def set_checkmark(self, *, value=True):
         assert isinstance(value, bool)
         if self.data["checkmark"] != value:
             txid = self.data["id"]
