@@ -1,4 +1,5 @@
 import csv
+import random
 
 import money
 
@@ -33,8 +34,12 @@ with open(FILENAME, "w") as fd:
 
     for account in instance.accounts():
         for tx in account.transactions():
-            row = dict(tx.data, account=account.name)
+            if not tx.booked:
+                print(f"Ignore unbooked transaction: {tx}")
+                continue
+            row = dict(tx.data, account=tx.account.name)
             writer.writerow(row)
-            print(tx)
-            # print(f"{account.name} -> {tx.payee}: {tx.amount:0.2f}")
+            if not tx.checkmark:
+                print(f"New transaction: {tx}")
+                tx.set_checkmark(value=True)
 
