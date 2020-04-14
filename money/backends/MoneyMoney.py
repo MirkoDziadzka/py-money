@@ -3,7 +3,7 @@ import datetime
 import plistlib
 import json
 
-import applescript
+from .. import utils
 
 
 def serialize(obj):
@@ -12,10 +12,7 @@ def serialize(obj):
     return str(obj)
 
 def run_apple_script(script):
-    res = applescript.run(script)
-    if res.code > 0:
-        raise Exception(f"Apple Script: {res.err}")
-    return res.out
+    return utils.applescript(script)
 
 class Transaction:
     def __init__(self, account, data):
@@ -75,23 +72,29 @@ class Account:
 
     @property
     def name(self):
+        return self.data["name"]
+
+    @property
+    def accountNumber(self):
         return self.data["accountNumber"]
 
     def transactions(self):
-        now = datetime.datetime.now()
-        start = now - datetime.timedelta(days=90)
-        cmd = f'tell application "MoneyMoney" to export transactions from account "{self.data["accountNumber"]}" from date "{start.strftime("%d/%m/%Y")}" to data "{now.strftime("%d/%m/%Y")}" as "plist"'
+        start = (datetime.datetime.now() - datetime.timedelta(days=90))
+        cmd = f'tell application "MoneyMoney" to export transactions from account "{self.data["accountNumber"]}" from date "{start.strftime("%d/%m/%Y")}" as "plist"'
         res = run_apple_script(cmd)
-        tx_data = plistlib.loads(res.encode("utf-8"))
+        tx_data = plistlib.loads(res)
         for tx in tx_data.get("transactions", []):
             yield Transaction(self, tx)
+
+    def __repr__(self):
+        return json.dumps(self.data, separators=(',', ':'), default=serialize)
 
 
 class MoneyMoney:
     def __init__(self):
         res = run_apple_script('tell application "MoneyMoney" to export accounts')
         # convert res to a python form .. this is ugly
-        self.data = plistlib.loads(res.encode("utf-8"))
+        self.data = plistlib.loads(res)
 
     def accounts(self):
         for account in self.data:

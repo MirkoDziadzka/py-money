@@ -1,4 +1,5 @@
 import csv
+import datetime
 import random
 
 import money
@@ -32,7 +33,9 @@ with open(FILENAME, "w") as fd:
     writer = csv.DictWriter(fd, FIELDS, restval='', extrasaction='raise')
     writer.writeheader()
 
+
     for account in instance.accounts():
+        print(f"Checking Account: {account.name}")
         for tx in account.transactions():
             if not tx.booked:
                 print(f"Ignore unbooked transaction: {tx}")

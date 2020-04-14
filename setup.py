@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="money", # Replace with your own username
-    version="0.0.1",
+    version="0.1.0",
     author="Mirko Dziadzka",
     author_email="mirko.dziadzka@gmail.com",
     description="Interface to MoneyMoney",
@@ -14,8 +14,7 @@ setuptools.setup(
     url="https://github.com/MirkoDziadzka/py-money",
     packages=setuptools.find_packages(),
     install_requires=[
-        'applescript',
-        ],
+    ],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",

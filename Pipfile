@@ -7,7 +7,6 @@ verify_ssl = true
 pytest = "*"
 
 [packages]
-applescript = "*"
 
 [requires]
 python_version = "3.7"
