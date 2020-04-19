@@ -1,7 +1,6 @@
 """
 Some helper functions.
 """
-
 import subprocess
 
 

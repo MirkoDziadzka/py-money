@@ -8,4 +8,3 @@ from .backends.MoneyMoney import MoneyMoney
 
 
 __all__ = ["MoneyMoney"]
-
