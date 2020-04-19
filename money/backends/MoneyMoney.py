@@ -5,6 +5,8 @@ import json
 
 from .. import utils
 
+MAC_APP_NAME = "MoneyMoney"
+
 
 def serialize(obj):
     if isinstance(obj, datetime.datetime):
@@ -47,22 +49,22 @@ def _transactions(account=None, *, age=90, start_date=None, end_date=None, **tx_
 
 class Transaction:
     ATTRIBUTES = [
-            "accountNumber",
-            "amount",
-            "bankCode",
-            "booked",
-            "bookingDate",
-            "bookingText",
-            "category",
-            "checkmark",
-            "creditorId",
-            "currency",
-            "endToEndReference",
-            "mandateReference",
-            "name",
-            "purpose",
-            "valueDate",
-            ]
+        "accountNumber",
+        "amount",
+        "bankCode",
+        "booked",
+        "bookingDate",
+        "bookingText",
+        "category",
+        "checkmark",
+        "creditorId",
+        "currency",
+        "endToEndReference",
+        "mandateReference",
+        "name",
+        "purpose",
+        "valueDate",
+        ]
 
     def __init__(self, account, data):
         self.account = account
@@ -71,15 +73,14 @@ class Transaction:
     @classmethod
     def normalize(cls, data):
         res = {}
-        for k,v in data.items():
-            if isinstance(v, datetime.datetime):
-                v = v.date()
-                if v <= datetime.date(year=1970, month=1, day=2):
+        for name, value in data.items():
+            if isinstance(value, datetime.datetime):
+                value = value.date()
+                if value <= datetime.date(year=1970, month=1, day=2):
                     continue
-                pass
-            elif k in ("comment", "categoryId"):
+            elif name in ("comment", "categoryId"):
                 continue
-            res[k] = v
+            res[name] = value
         return res
 
     def __getattr__(self, name):
@@ -105,8 +106,12 @@ class Transaction:
         if self.data["checkmark"] != value:
             txid = self.data["id"]
             onoff = "on" if value else "off"
-            cmd = f'tell application "MoneyMoney" to set transaction id {txid} checkmark to "{onoff}"'
-            res = run_apple_script(cmd)
+            cmd = [
+                f'tell application "{MAC_APP_NAME}"'
+                f'to set transaction id {txid}'
+                f'checkmark to "{onoff}"'
+            ]
+            run_apple_script(" ".join(cmd))
             self.data["checkmark"] = value
 
     def __repr__(self):
@@ -142,7 +147,7 @@ class MoneyMoney:
     def accounts(self):
         for account in self.data:
             if account.get("accountNumber"):
-                yield(Account(account))
+                yield Account(account)
 
     def transactions(self, *args, **kwargs):
         return _transactions(account=None, *args, **kwargs)
