@@ -1,6 +1,5 @@
 import csv
 import datetime
-import random
 
 import money
 
@@ -40,7 +39,7 @@ for account in instance.accounts():
         tx.set_checkmark(value=True)  # mark this as seen
 
 
-category="Spende"
+category = "Spende"
 
 print(f"Show all transactions which are marked as category '{category}'")
 for tx in instance.transactions(age=30, booked=True, category=category):
@@ -56,7 +55,8 @@ with open(FILENAME, "w") as fd:
     for account in instance.accounts():
         print(f"Writing data for account {account.name} ...", end='', flush=True)
         count = 0
-        for tx in account.transactions(start_date = datetime.date(year=2000, month=1, day=1), booked=True):
+        begin_of_time = datetime.date(year=1970, month=1, day=1)
+        for tx in account.transactions(start_date=begin_of_time, booked=True):
             assert tx.booked == True
             row = dict(tx.data, account=tx.account.name)
             writer.writerow(row)
