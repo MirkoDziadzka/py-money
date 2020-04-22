@@ -4,8 +4,8 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="money", # Replace with your own username
-    version="0.1.0",
+    name="money",
+    version="0.1.1",
     author="Mirko Dziadzka",
     author_email="mirko.dziadzka@gmail.com",
     description="Interface to MoneyMoney",

@@ -13,8 +13,10 @@ def serialize(obj):
         return str(obj.date())
     return str(obj)
 
+
 def run_apple_script(script):
     return utils.applescript(script)
+
 
 def _transactions(account=None, *, age=90, start_date=None, end_date=None, **tx_filter):
     """extract transactions from MoneyMoney which match the filter
@@ -47,6 +49,7 @@ def _transactions(account=None, *, age=90, start_date=None, end_date=None, **tx_
         if tx.pass_filter(**tx_filter):
             yield tx
 
+
 class Transaction:
     ATTRIBUTES = [
         "accountNumber",
@@ -64,7 +67,7 @@ class Transaction:
         "name",
         "purpose",
         "valueDate",
-        ]
+    ]
 
     def __init__(self, account, data):
         self.account = account
