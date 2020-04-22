@@ -10,8 +10,9 @@ import money
 instance = money.MoneyMoney()
 
 for account in instance.accounts():
+    print(f"{account.name}: {account.balance:0.2f} {account.currency}")
     for tx in account.transactions():
-        print(f"{account.name} -> {tx.payee}: {tx.amount:0.2f}")
+        print(f"Transaction: {tx.payee}: {tx.amount:0.2f}")
 ```
 
 

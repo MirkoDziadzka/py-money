@@ -130,6 +130,13 @@ class Account:
     def accountNumber(self):
         return self.data["accountNumber"]
 
+    @property
+    def balance(self):
+        return self.data["balance"][0][0]
+
+    @property
+    def currency(self):
+        return self.data["balance"][0][1]
 
     def transactions(self, *args, **kwargs):
         return _transactions(account=self, *args, **kwargs)
