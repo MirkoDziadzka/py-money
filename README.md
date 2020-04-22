@@ -1,5 +1,4 @@
 # py-money
-![Python package](https://github.com/MirkoDziadzka/py-money/workflows/Python%20package/badge.svg)
 
 A Python interface to MoneyMoney
 
