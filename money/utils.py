@@ -1,7 +1,9 @@
 """
 Some helper functions.
 """
+
 import subprocess
+
 
 def applescript(cmd):
     """Execute an apple script command.
