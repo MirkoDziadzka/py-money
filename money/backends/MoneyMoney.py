@@ -26,14 +26,14 @@ class Comment:
     TAG_REGEX = re.compile(r"\s*<tag:(?P<tag>[^>]+)>\s*")
 
     def __init__(self, s: Optional[str]):
-        self.comment = ""
+        self.text = ""
         self.tags = set()
         self.parse(s or "")
         self.changed = False
 
     def parse(self, s: str) -> None:
         self.tags = set(m.group("tag") for m in self.TAG_REGEX.finditer(s))
-        self.comment = self.TAG_REGEX.sub("", s).strip()
+        self.text = self.TAG_REGEX.sub("", s).strip()
 
     def add(self, tag: str):
         if tag not in self.tags:
@@ -42,7 +42,7 @@ class Comment:
 
     def __str__(self):
         res = []
-        res.append(self.comment.strip())
+        res.append(self.text.strip())
         for tag in self.tags:
             res.append(f"<tag:{tag}>")
         return (" ".join(res)).strip()
@@ -69,7 +69,7 @@ def _transactions(
     cmd = []
     cmd += ['tell application "MoneyMoney" to export transactions']
     if account is not None:
-        cmd += [f'from account "{account.accountNumber}"']
+        cmd += [f'from account "{account.account_number}"']
     cmd += [f'from date "{start_date.strftime("%d/%m/%Y")}"']
     if end_date is not None:
         cmd += [f'to date "{end_date.strftime("%d/%m/%Y")}"']
@@ -138,7 +138,7 @@ class Transaction:
 
     @property
     def payee(self) -> str:
-        return self.accountNumber or self.name
+        return self.account_number or self.name
 
     def pass_filter(self, *, booked=None, checked=None, category=None):
         if booked is not None and self.booked != booked:
@@ -159,12 +159,12 @@ class Transaction:
         return Comment(self.comment).tags
 
     def add_tags(self, tag: str, *tags: List[str]) -> None:
-        c: Set[str] = Comment(self.comment)
-        c.tags.add(tag)
+        c = Comment(self.comment)
+        c.add(tag)
         for t in tags:
-            c.tags.add(t)
+            c.add(t)
         self.data["comment"] = str(c)
-        if True:
+        if c.changed:
             self.set_field("comment", self.data["comment"])
 
     def __repr__(self):
@@ -180,7 +180,7 @@ class Account:
         return self.data["name"]
 
     @property
-    def accountNumber(self) -> str:
+    def account_number(self) -> str:
         return self.data["accountNumber"]
 
     @property
