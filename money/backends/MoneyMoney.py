@@ -2,22 +2,26 @@ import datetime
 import plistlib
 import json
 
+from typing import Iterable
+
 from .. import utils
 
 MAC_APP_NAME = "MoneyMoney"
 
 
-def serialize(obj):
+def serialize(obj) -> str:
     if isinstance(obj, datetime.datetime):
         return str(obj.date())
     return str(obj)
 
 
-def run_apple_script(script):
+def run_apple_script(script: str) -> bytes:
     return utils.applescript(script)
 
 
-def _transactions(account=None, *, age=90, start_date=None, end_date=None, **tx_filter):
+def _transactions(
+    account=None, *, age=90, start_date=None, end_date=None, **tx_filter
+) -> Iterable[Transaction]:
     """extract transactions from MoneyMoney which match the filter
 
     if start_data is given, it is generated from age
@@ -68,7 +72,7 @@ class Transaction:
         "valueDate",
     ]
 
-    def __init__(self, account, data):
+    def __init__(self, account: Account, data):
         self.account = account
         self.data = self.normalize(data)
 
@@ -91,7 +95,7 @@ class Transaction:
         return self.data.get(name, None)
 
     @property
-    def payee(self):
+    def payee(self) -> str:
         return self.accountNumber or self.name
 
     def pass_filter(self, *, booked=None, checked=None, category=None):
@@ -103,7 +107,7 @@ class Transaction:
             return False
         return True
 
-    def set_checkmark(self, *, value=True):
+    def set_checkmark(self, *, value: bool = True) -> None:
         assert isinstance(value, bool)
         if self.data["checkmark"] != value:
             txid = self.data["id"]
@@ -125,11 +129,11 @@ class Account:
         self.data = data
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self.data["name"]
 
     @property
-    def accountNumber(self):
+    def accountNumber(self) -> str:
         return self.data["accountNumber"]
 
     @property

@@ -8,7 +8,7 @@ class AppleScriptException(Exception):
     pass
 
 
-def applescript(cmd):
+def applescript(cmd: str) -> bytes:
     """Execute an apple script command.
 
     Return the output of the command or raise an exception on failure.
