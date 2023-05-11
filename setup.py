@@ -13,8 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/MirkoDziadzka/py-money",
     packages=setuptools.find_packages(),
-    install_requires=[
-    ],
+    install_requires=[],
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
@@ -22,5 +21,5 @@ setuptools.setup(
         "License :: OSI Approved :: BSD License",
         "Operating System :: MacOS :: MacOS X",
     ],
-    python_requires='>=3.6',
+    python_requires=">=3.6",
 )
