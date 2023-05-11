@@ -21,5 +21,5 @@ def applescript(cmd: str) -> bytes:
     )
     out, err = proc.communicate(input=cmd.encode("utf-8"), timeout=60)
     if proc.returncode != 0:
-        raise AppleScriptException(f'Apple Script: {err.decode("utf-8")}')
+        raise AppleScriptException(f'{err.decode("utf-8")}')
     return out

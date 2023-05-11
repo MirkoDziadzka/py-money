@@ -11,6 +11,7 @@ FIELDS = [
     "account",
     "id",
     "accountNumber",
+    "accountUuid",
     "bankCode",
     "booked",
     "amount",
@@ -22,8 +23,10 @@ FIELDS = [
     "creditorId",
     "mandateReference",
     "category",
+    "categoryUuid",
     "bookingDate",
     "valueDate",
+    "comment",
     "checkmark",
 ]
 
@@ -39,6 +42,12 @@ for account in instance.accounts():
             f"Found new transaction: {account.name} {tx.bookingDate} {tx.amount:10.2f} {tx.currency} {tx.name}"
         )
         tx.set_checkmark(value=True)  # mark this as seen
+
+print("Check all transactions and tag all transaction with a given word")
+for account in instance.accounts():
+    for tx in account.transactions(age=7, booked=True):
+        if tx.name and "Medecins Sans Frontieres" in tx.name:
+            tx.add_tags("tax-relevant")
 
 
 category = "Spende"

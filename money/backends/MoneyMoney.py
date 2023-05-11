@@ -1,8 +1,11 @@
+from __future__ import annotations
+
 import datetime
 import plistlib
 import json
+import re
 
-from typing import Iterable
+from typing import Iterable, List, Set, Optional
 
 from .. import utils
 
@@ -17,6 +20,32 @@ def serialize(obj) -> str:
 
 def run_apple_script(script: str) -> bytes:
     return utils.applescript(script)
+
+
+class Comment:
+    TAG_REGEX = re.compile(r"\s*<tag:(?P<tag>[^>]+)>\s*")
+
+    def __init__(self, s: Optional[str]):
+        self.comment = ""
+        self.tags = set()
+        self.parse(s or "")
+        self.changed = False
+
+    def parse(self, s: str) -> None:
+        self.tags = set(m.group("tag") for m in self.TAG_REGEX.finditer(s))
+        self.comment = self.TAG_REGEX.sub("", s).strip()
+
+    def add(self, tag: str):
+        if tag not in self.tags:
+            self.changed = True
+            self.tags.add(tag)
+
+    def __str__(self):
+        res = []
+        res.append(self.comment.strip())
+        for tag in self.tags:
+            res.append(f"<tag:{tag}>")
+        return (" ".join(res)).strip()
 
 
 def _transactions(
@@ -69,12 +98,25 @@ class Transaction:
         "mandateReference",
         "name",
         "purpose",
+        "comment",
         "valueDate",
     ]
 
     def __init__(self, account: Account, data):
         self.account = account
         self.data = self.normalize(data)
+
+    def set_field(self, name: str, value: str):
+        assert name in self.ATTRIBUTES
+        txid = self.data["id"]
+        cmd = " ".join(
+            [
+                f'tell application "{MAC_APP_NAME}"',
+                f"to set transaction id {txid}",
+                f'{name} to "{value}"',
+            ]
+        )
+        run_apple_script(cmd)
 
     @classmethod
     def normalize(cls, data):
@@ -84,7 +126,7 @@ class Transaction:
                 value = value.date()
                 if value <= datetime.date(year=1970, month=1, day=2):
                     continue
-            elif name in ("comment", "categoryId"):
+            elif name in ("categoryId",):
                 continue
             res[name] = value
         return res
@@ -110,15 +152,20 @@ class Transaction:
     def set_checkmark(self, *, value: bool = True) -> None:
         assert isinstance(value, bool)
         if self.data["checkmark"] != value:
-            txid = self.data["id"]
-            onoff = "on" if value else "off"
-            cmd = [
-                f'tell application "{MAC_APP_NAME}"'
-                f"to set transaction id {txid}"
-                f'checkmark to "{onoff}"'
-            ]
-            run_apple_script(" ".join(cmd))
-            self.data["checkmark"] = value
+            self.set_field("checkmark", "on" if value else "off")
+
+    @property
+    def tags(self) -> Set[str]:
+        return Comment(self.comment).tags
+
+    def add_tags(self, tag: str, *tags: List[str]) -> None:
+        c: Set[str] = Comment(self.comment)
+        c.tags.add(tag)
+        for t in tags:
+            c.tags.add(t)
+        self.data["comment"] = str(c)
+        if True:
+            self.set_field("comment", self.data["comment"])
 
     def __repr__(self):
         return json.dumps(self.data, separators=(",", ":"), default=serialize)
@@ -144,8 +191,14 @@ class Account:
     def currency(self):
         return self.data["balance"][0][1]
 
+    @property
+    def is_portfolio(self):
+        return self.data["portfolio"]
+
     def transactions(self, *args, **kwargs):
-        return _transactions(account=self, *args, **kwargs)
+        if not self.is_portfolio:
+            return _transactions(account=self, *args, **kwargs)
+        return []
 
     def __repr__(self):
         return json.dumps(self.data, separators=(",", ":"), default=serialize)
