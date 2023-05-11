@@ -1,4 +1,3 @@
-
 import datetime
 import plistlib
 import json
@@ -21,15 +20,15 @@ def run_apple_script(script):
 def _transactions(account=None, *, age=90, start_date=None, end_date=None, **tx_filter):
     """extract transactions from MoneyMoney which match the filter
 
-       if start_data is given, it is generated from age
-       if end_data is not give, no end_date will be assumed.
-       other argumens are treated as filter on the transactions. Currently supported:
-       - booked - the transaction is marked as booked or not yet booked
-       - checked - the checkmark is True (or False)
-       - category - the value of the category field matches the given argument
+    if start_data is given, it is generated from age
+    if end_data is not give, no end_date will be assumed.
+    other argumens are treated as filter on the transactions. Currently supported:
+    - booked - the transaction is marked as booked or not yet booked
+    - checked - the checkmark is True (or False)
+    - category - the value of the category field matches the given argument
 
-       if account is given, it is expected to be an Account object
-       and only transactions from this account will be fetched.
+    if account is given, it is expected to be an Account object
+    and only transactions from this account will be fetched.
     """
 
     if start_date is None:
@@ -111,14 +110,14 @@ class Transaction:
             onoff = "on" if value else "off"
             cmd = [
                 f'tell application "{MAC_APP_NAME}"'
-                f'to set transaction id {txid}'
+                f"to set transaction id {txid}"
                 f'checkmark to "{onoff}"'
             ]
             run_apple_script(" ".join(cmd))
             self.data["checkmark"] = value
 
     def __repr__(self):
-        return json.dumps(self.data, separators=(',', ':'), default=serialize)
+        return json.dumps(self.data, separators=(",", ":"), default=serialize)
 
 
 class Account:
@@ -145,7 +144,7 @@ class Account:
         return _transactions(account=self, *args, **kwargs)
 
     def __repr__(self):
-        return json.dumps(self.data, separators=(',', ':'), default=serialize)
+        return json.dumps(self.data, separators=(",", ":"), default=serialize)
 
 
 class MoneyMoney:
@@ -162,7 +161,5 @@ class MoneyMoney:
     def transactions(self, *args, **kwargs):
         return _transactions(account=None, *args, **kwargs)
 
-
-
-
-
+    def transactions(self, *args, **kwargs):
+        return _transactions(account=None, *args, **kwargs)

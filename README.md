@@ -15,10 +15,10 @@ for account in instance.accounts():
         print(f"Transaction: {tx.payee}: {tx.amount:0.2f}")
 ```
 
-
 Only print new transactions (checked=False) which are already booked.
 After printing them out, set the state to 'checked' so that they
 will not be seen in the next invocation.
+
 ```py
 for account in instance.accounts():
     for tx in account.transactions(age=90, booked=True, checked=False):
