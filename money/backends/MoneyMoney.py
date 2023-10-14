@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import abc
 import datetime
 import plistlib
 import json
@@ -81,18 +82,8 @@ def _transactions(
         if tx.pass_filter(**tx_filter):
             yield tx
 
-class Position:
-    ATTRIBUTES = [
-        "name",
-        "type",
-        "isin",
-        "price",
-        "currencyOfPrice",
-        "quantity",
-        "amount",
-        "currencyOfAmount",
-    ]
 
+class _Base(abc.ABC):
     def __init__(self, account: Account, data):
         self.account = account
         self.data = self.normalize(data)
@@ -118,7 +109,20 @@ class Position:
     def __repr__(self):
         return json.dumps(self.data, separators=(",", ":"), default=serialize)
 
-class Transaction:
+class Position(_Base):
+    ATTRIBUTES = [
+        "name",
+        "type",
+        "isin",
+        "price",
+        "currencyOfPrice",
+        "quantity",
+        "amount",
+        "currencyOfAmount",
+    ]
+
+
+class Transaction(_Base):
     ATTRIBUTES = [
         "accountNumber",
         "amount",
@@ -138,9 +142,6 @@ class Transaction:
         "valueDate",
     ]
 
-    def __init__(self, account: Account, data):
-        self.account = account
-        self.data = self.normalize(data)
 
     def set_field(self, name: str, value: str):
         assert name in self.ATTRIBUTES
@@ -154,23 +155,6 @@ class Transaction:
         )
         run_apple_script(cmd)
 
-    @classmethod
-    def normalize(cls, data):
-        res = {}
-        for name, value in data.items():
-            if isinstance(value, datetime.datetime):
-                value = value.date()
-                if value <= datetime.date(year=1970, month=1, day=2):
-                    continue
-            elif name in ("categoryId",):
-                continue
-            res[name] = value
-        return res
-
-    def __getattr__(self, name):
-        if name not in self.ATTRIBUTES:
-            raise AttributeError(name)
-        return self.data.get(name, None)
 
     @property
     def payee(self) -> str:
@@ -202,9 +186,6 @@ class Transaction:
         self.data["comment"] = str(c)
         if c.changed:
             self.set_field("comment", self.data["comment"])
-
-    def __repr__(self):
-        return json.dumps(self.data, separators=(",", ":"), default=serialize)
 
 
 class Account:
