@@ -255,5 +255,3 @@ class MoneyMoney:
     def transactions(self, *args, **kwargs):
         return _transactions(account=None, *args, **kwargs)
 
-    def transactions(self, *args, **kwargs):
-        return _transactions(account=None, *args, **kwargs)
