@@ -81,6 +81,42 @@ def _transactions(
         if tx.pass_filter(**tx_filter):
             yield tx
 
+class Position:
+    ATTRIBUTES = [
+        "name",
+        "type",
+        "isin",
+        "price",
+        "currencyOfPrice",
+        "quantity",
+        "amount",
+        "currencyOfAmount",
+    ]
+
+    def __init__(self, account: Account, data):
+        self.account = account
+        self.data = self.normalize(data)
+
+    @classmethod
+    def normalize(cls, data):
+        res = {}
+        for name, value in data.items():
+            if isinstance(value, datetime.datetime):
+                value = value.date()
+                if value <= datetime.date(year=1970, month=1, day=2):
+                    continue
+            elif name in ("categoryId",):
+                continue
+            res[name] = value
+        return res
+
+    def __getattr__(self, name):
+        if name not in self.ATTRIBUTES:
+            raise AttributeError(name)
+        return self.data.get(name, None)
+
+    def __repr__(self):
+        return json.dumps(self.data, separators=(",", ":"), default=serialize)
 
 class Transaction:
     ATTRIBUTES = [
@@ -200,6 +236,20 @@ class Account:
             return _transactions(account=self, *args, **kwargs)
         return []
 
+    def positions(self) -> Iterable[Position]:
+        """extract positions from a portfolio """
+        if not self.is_portfolio:
+            return
+        cmd = []
+        cmd += ['tell application "MoneyMoney" to export portfolio']
+        cmd += [f'from account "{self.account_number}"']
+        cmd += ['as "plist"']
+
+        res = run_apple_script(" ".join(cmd))
+        tx_data = plistlib.loads(res)
+        for tx_data in tx_data.get("portfolio", []):
+            yield Position(self, tx_data)
+
     def __repr__(self):
         return json.dumps(self.data, separators=(",", ":"), default=serialize)
 
@@ -210,10 +260,16 @@ class MoneyMoney:
         # convert res to a python form .. this is ugly
         self.data = plistlib.loads(res)
 
-    def accounts(self):
+    def _accounts(self) -> Iterable[Account]:
         for account in self.data:
-            if account.get("accountNumber"):
+            if account.get("group") is not True:
                 yield Account(account)
+
+    def accounts(self) -> Iterable[Account]:
+        return (account for account in self._accounts() if account.is_portfolio is False)
+
+    def portfolios(self) -> Iterable[Account]:
+        return (account for account in self._accounts() if account.is_portfolio is True)
 
     def transactions(self, *args, **kwargs):
         return _transactions(account=None, *args, **kwargs)
