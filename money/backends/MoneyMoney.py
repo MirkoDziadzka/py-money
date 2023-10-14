@@ -6,7 +6,7 @@ import plistlib
 import json
 import re
 
-from typing import Iterable, List, Set, Optional
+from typing import Iterable, Set, Optional
 
 from .. import utils
 
@@ -28,7 +28,7 @@ class Comment:
 
     def __init__(self, s: Optional[str]):
         self.text = ""
-        self.tags = set()
+        self.tags : Set[str] = set()
         self.parse(s or "")
         self.changed = False
 
@@ -178,7 +178,7 @@ class Transaction(_Base):
     def tags(self) -> Set[str]:
         return Comment(self.comment).tags
 
-    def add_tags(self, tag: str, *tags: List[str]) -> None:
+    def add_tags(self, tag: str, *tags: str) -> None:
         c = Comment(self.comment)
         c.add(tag)
         for t in tags:
@@ -254,4 +254,3 @@ class MoneyMoney:
 
     def transactions(self, *args, **kwargs):
         return _transactions(account=None, *args, **kwargs)
-
