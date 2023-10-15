@@ -82,4 +82,5 @@ print("Check all Portfolios")
 for account in instance.portfolios():
     print(f"Checking portfolio: {account.name}")
     for p in account.positions():
-        print(f"Have {p.quantity} {p.type}s from '{p.name}' at price {p.price} {p.currencyOfPrice} resulting in a value of {p.amount} {p.currencyOfAmount}")
+        print(f"Have {p.quantity} {p.type}s from '{p.name}' at price {p.price} {p.currencyOfPrice} " +
+              f"resulting in a value of {p.amount} {p.currencyOfAmount}")

@@ -8,6 +8,7 @@ pytest = "*"
 flake8 = "*"
 pylint = "*"
 mypy = "*"
+ruff = "*"
 
 [packages]
 
