@@ -221,15 +221,19 @@ class BackendInterface(abc.ABC):
     """ generoc inteface for a MoneyMoney Backend """
     # pylint: disable=unused-argument
 
+    @abc.abstractmethod
     def get_accounts(self):
         ...
 
+    @abc.abstractmethod
     def get_transactions(self, account: str, start_date: datetime.date, end_date: Optional[datetime.date]):
         ...
 
+    @abc.abstractmethod
     def get_positions(self, account: str):
         ...
 
+    @abc.abstractmethod
     def set_transaction_field(self, txid: str, name: str, value: str):
         ...
 
