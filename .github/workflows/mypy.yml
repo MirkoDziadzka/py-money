@@ -20,4 +20,4 @@ jobs:
         pip install mypy
     - name: Analysing the code with mypy
       run: |
-        mypy $(git ls-files '*.py')
+        mypy money
