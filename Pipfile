@@ -9,6 +9,7 @@ flake8 = "*"
 pylint = "*"
 mypy = "*"
 ruff = "*"
+pytest-cov = "*"
 
 [packages]
 
