@@ -25,3 +25,13 @@ for account in instance.accounts():
         print(f"New transaction: {tx}")
         tx.set_checkmark()
 ```
+
+Access all your portfolios
+
+```py
+print("Check all Portfolios")
+for account in instance.portfolios():
+    print(f"Checking portfolio: {account.name}")
+    for p in account.positions():
+        print(f"Have {p.quantity} {p.type}s from '{p.name}' at price {p.price} {p.currencyOfPrice}")
+```

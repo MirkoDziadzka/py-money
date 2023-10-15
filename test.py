@@ -36,6 +36,7 @@ FIELDS = [
 
 print("Show all new, booked and unchecked transactions")
 for account in instance.accounts():
+    print(f"Checking account {account.name}")
     for tx in account.transactions(age=30, booked=True, checked=False):
         assert tx.booked and not tx.checkmark
         print(
@@ -75,3 +76,10 @@ with open(FILENAME, "w") as fd:
             writer.writerow(row)
             count += 1
         print(f"wrote {count} entries")
+
+
+print("Check all Portfolios")
+for account in instance.portfolios():
+    print(f"Checking portfolio: {account.name}")
+    for p in account.positions():
+        print(f"Have {p.quantity} {p.type}s from '{p.name}' at price {p.price} {p.currencyOfPrice} resulting in a value of {p.amount} {p.currencyOfAmount}")

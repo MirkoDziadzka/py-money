@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import abc
 import datetime
 import plistlib
 import json
 import re
 
-from typing import Iterable, List, Set, Optional
+from typing import Iterable, Set, Optional
 
 from .. import utils
 
@@ -27,7 +28,7 @@ class Comment:
 
     def __init__(self, s: Optional[str]):
         self.text = ""
-        self.tags = set()
+        self.tags : Set[str] = set()
         self.parse(s or "")
         self.changed = False
 
@@ -82,7 +83,52 @@ def _transactions(
             yield tx
 
 
-class Transaction:
+class _Base(abc.ABC):
+    def __init__(self, account: Account, data):
+        self.account = account
+        self.data = self.normalize(data)
+
+    @classmethod
+    def normalize(cls, data):
+        res = {}
+        for name, value in data.items():
+            if isinstance(value, datetime.datetime):
+                value = value.date()
+                if value <= datetime.date(year=1970, month=1, day=2):
+                    continue
+            elif name in ("categoryId",):
+                continue
+            res[name] = value
+        return res
+
+    def __getattr__(self, name):
+        if name not in self.ATTRIBUTES:
+            raise AttributeError(name)
+        return self.data.get(name, None)
+
+    def __repr__(self):
+        return json.dumps(self.data, separators=(",", ":"), default=serialize)
+
+class Position(_Base):
+    ATTRIBUTES = [
+        "name",
+        "market",  # Xetra, Tradegate, ...
+        "type",  # share, bond, ...
+        "isin",
+        "price",
+        "purchasePrice",
+        "currencyOfPrice",
+        "quantity",
+        "amount",
+        "currencyOfAmount",
+        "absoluteProfit",
+        "currencyOfProfit",
+        "relativeProfit",
+        "tradeTimstamp",
+    ]
+
+
+class Transaction(_Base):
     ATTRIBUTES = [
         "accountNumber",
         "amount",
@@ -102,9 +148,6 @@ class Transaction:
         "valueDate",
     ]
 
-    def __init__(self, account: Account, data):
-        self.account = account
-        self.data = self.normalize(data)
 
     def set_field(self, name: str, value: str):
         assert name in self.ATTRIBUTES
@@ -118,23 +161,6 @@ class Transaction:
         )
         run_apple_script(cmd)
 
-    @classmethod
-    def normalize(cls, data):
-        res = {}
-        for name, value in data.items():
-            if isinstance(value, datetime.datetime):
-                value = value.date()
-                if value <= datetime.date(year=1970, month=1, day=2):
-                    continue
-            elif name in ("categoryId",):
-                continue
-            res[name] = value
-        return res
-
-    def __getattr__(self, name):
-        if name not in self.ATTRIBUTES:
-            raise AttributeError(name)
-        return self.data.get(name, None)
 
     @property
     def payee(self) -> str:
@@ -158,7 +184,7 @@ class Transaction:
     def tags(self) -> Set[str]:
         return Comment(self.comment).tags
 
-    def add_tags(self, tag: str, *tags: List[str]) -> None:
+    def add_tags(self, tag: str, *tags: str) -> None:
         c = Comment(self.comment)
         c.add(tag)
         for t in tags:
@@ -166,9 +192,6 @@ class Transaction:
         self.data["comment"] = str(c)
         if c.changed:
             self.set_field("comment", self.data["comment"])
-
-    def __repr__(self):
-        return json.dumps(self.data, separators=(",", ":"), default=serialize)
 
 
 class Account:
@@ -200,6 +223,20 @@ class Account:
             return _transactions(account=self, *args, **kwargs)
         return []
 
+    def positions(self) -> Iterable[Position]:
+        """extract positions from a portfolio """
+        if not self.is_portfolio:
+            return
+        cmd = []
+        cmd += ['tell application "MoneyMoney" to export portfolio']
+        cmd += [f'from account "{self.account_number}"']
+        cmd += ['as "plist"']
+
+        res = run_apple_script(" ".join(cmd))
+        tx_data = plistlib.loads(res)
+        for tx_data in tx_data.get("portfolio", []):
+            yield Position(self, tx_data)
+
     def __repr__(self):
         return json.dumps(self.data, separators=(",", ":"), default=serialize)
 
@@ -210,13 +247,16 @@ class MoneyMoney:
         # convert res to a python form .. this is ugly
         self.data = plistlib.loads(res)
 
-    def accounts(self):
+    def _accounts(self) -> Iterable[Account]:
         for account in self.data:
-            if account.get("accountNumber"):
+            if account.get("group") is not True:
                 yield Account(account)
 
-    def transactions(self, *args, **kwargs):
-        return _transactions(account=None, *args, **kwargs)
+    def accounts(self) -> Iterable[Account]:
+        return (account for account in self._accounts() if account.is_portfolio is False)
+
+    def portfolios(self) -> Iterable[Account]:
+        return (account for account in self._accounts() if account.is_portfolio is True)
 
     def transactions(self, *args, **kwargs):
         return _transactions(account=None, *args, **kwargs)
