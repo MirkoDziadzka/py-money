@@ -112,13 +112,19 @@ class _Base(abc.ABC):
 class Position(_Base):
     ATTRIBUTES = [
         "name",
-        "type",
+        "market",  # Xetra, Tradegate, ...
+        "type",  # share, bond, ...
         "isin",
         "price",
+        "purchasePrice",
         "currencyOfPrice",
         "quantity",
         "amount",
         "currencyOfAmount",
+        "absoluteProfit",
+        "currencyOfProfit",
+        "relativeProfit",
+        "tradeTimstamp",
     ]
 
 
