@@ -3,6 +3,7 @@
 
 from datetime import date
 import os.path
+from typing import Optional
 
 import pytest
 import yaml
@@ -23,7 +24,7 @@ class MockedBackend(BackendInterface):
     def get_positions(self, account: str):
         return self.data["positions"][account]
 
-    def get_transactions(self, account: str, start_date: date, end_date: date | None):
+    def get_transactions(self, account: str, start_date: date, end_date: Optional[date]):
         return self.data["transactions"][account]
 
     def set_transaction_field(self, txid: str, name: str, value: str):
