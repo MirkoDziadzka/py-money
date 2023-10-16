@@ -295,8 +295,20 @@ class MoneyMoney:
     def accounts(self) -> Iterable[Account]:
         return (account for account in self._accounts() if account.is_portfolio is False)
 
+    def account(self, name: str) -> Optional[Account]:
+        for account in self.accounts():
+            if account.name == name:
+                return account
+        return None
+
     def portfolios(self) -> Iterable[Account]:
         return (account for account in self._accounts() if account.is_portfolio is True)
+
+    def portfolio(self, name: str) -> Optional[Account]:
+        for portfolio in self.portfolios():
+            if portfolio.name == name:
+                return portfolio
+        return None
 
     def transactions(self, *args, **kwargs):
         for account in self.accounts():

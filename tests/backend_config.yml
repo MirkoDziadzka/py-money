@@ -1,0 +1,48 @@
+---
+# List of accounts
+accounts:
+- name: "Deutsche Bank"
+  portfolio: false
+  accountNumber: A1111111111
+- name: "Postbank"
+  portfolio: false
+  accountNumber: A2222222222
+- name: "Comdirect"
+  portfolio: true
+  accountNumber: P1111111111
+
+transactions:
+  A1111111111:
+  - id: 1001
+    accountNumber: DE011001001001001001
+    bankCode: FOOBAR
+    booked: true
+    amount: 100
+    currency: EUR
+    name: Finanzamt
+    booked: true
+    checkmark: false
+  - id: 1002
+    accountNumber: DE011001001001001001
+    bankCode: FOOBAR
+    booked: true
+    amount: 100
+    currency: EUR
+    name: Finanzamt
+    booked: false
+    checkmark: false
+  A2222222222:
+  - id: 2001
+    accountNumber: DE011001001001001001
+    bankCode: FOOBAR
+    booked: true
+    amount: 100
+    currency: EUR
+    name: Finanzamt
+    booked: true
+    checkmark: false
+
+positions:
+  P1111111111:
+  - name: Apple
+
