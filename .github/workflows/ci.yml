@@ -22,8 +22,11 @@ jobs:
     - name: Analysing the code with different tools
       run: |
         ruff money tests
+        python -m pylint money
+        python -m pylint test
+    - name: Type cheking
+      run: |
         mypy money tests
-        pylint money tests
-    - name: Run pytest
+    - name: Unit tests
       run: |
         python -m pytest

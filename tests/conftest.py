@@ -1,3 +1,6 @@
+""" pytest config
+"""
+
 import os
 from datetime import date
 from typing import Optional
@@ -13,6 +16,7 @@ TESTDIR = os.path.dirname(__file__)
 
 
 class MockedBackend(BackendInterface):
+    """ Mock for the actual MoneyMoney backend."""
     def __init__(self, data):
         self.data = data
 

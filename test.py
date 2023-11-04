@@ -62,7 +62,7 @@ for tx in instance.transactions(age=30, booked=True, category=category):
 
 print(f"Convert all transactions to csv '{FILENAME}'")
 
-with open(FILENAME, "w") as fd:
+with open(FILENAME, "w", encoding="utf-8") as fd:
     writer = csv.DictWriter(fd, FIELDS, restval="", extrasaction="raise")
     writer.writeheader()
 
