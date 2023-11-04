@@ -1,0 +1,20 @@
+[tool.ruff]
+line-length = 120
+
+[tool.pylint.FORMAT]
+max-line-length=120
+[tool.pylint.'MESSAGES CONTROL']
+disable='''
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    trailing-newlines,
+    invalid-name
+'''
+
+[tool.pytest.ini_options]
+minversion = "6.0"
+addopts = "-ra -q"
+testpaths = [
+    "tests",
+]

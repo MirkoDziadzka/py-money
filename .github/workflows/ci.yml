@@ -1,0 +1,32 @@
+name: code analysis
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.8", "3.9", "3.10", "3.11"]
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        python -m pip install pylint mypy ruff pytest
+        python -m pip install pyyaml types-pyyaml
+    - name: Analysing the code with different tools
+      run: |
+        ruff money tests
+        python -m pylint money
+        python -m pylint test
+    - name: Type cheking
+      run: |
+        mypy money tests
+    - name: Unit tests
+      run: |
+        python -m pytest

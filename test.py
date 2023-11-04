@@ -62,7 +62,7 @@ for tx in instance.transactions(age=30, booked=True, category=category):
 
 print(f"Convert all transactions to csv '{FILENAME}'")
 
-with open(FILENAME, "w") as fd:
+with open(FILENAME, "w", encoding="utf-8") as fd:
     writer = csv.DictWriter(fd, FIELDS, restval="", extrasaction="raise")
     writer.writeheader()
 
@@ -82,4 +82,5 @@ print("Check all Portfolios")
 for account in instance.portfolios():
     print(f"Checking portfolio: {account.name}")
     for p in account.positions():
-        print(f"Have {p.quantity} {p.type}s from '{p.name}' at price {p.price} {p.currencyOfPrice} resulting in a value of {p.amount} {p.currencyOfAmount}")
+        print(f"Have {p.quantity} {p.type}s from '{p.name}' at price {p.price} {p.currencyOfPrice} " +
+              f"resulting in a value of {p.amount} {p.currencyOfAmount}")

@@ -6,21 +6,16 @@ import plistlib
 import json
 import re
 
-from typing import Iterable, Set, Optional
+from typing import Iterable, Optional, List, Dict, Set, Any
 
 from .. import utils
 
-MAC_APP_NAME = "MoneyMoney"
-
 
 def serialize(obj) -> str:
+    """ helper function to serialize an object """
     if isinstance(obj, datetime.datetime):
         return str(obj.date())
     return str(obj)
-
-
-def run_apple_script(script: str) -> bytes:
-    return utils.applescript(script)
 
 
 class Comment:
@@ -33,15 +28,23 @@ class Comment:
         self.changed = False
 
     def parse(self, s: str) -> None:
+        """ parse a comment into the text part and a list of tags """
         self.tags = set(m.group("tag") for m in self.TAG_REGEX.finditer(s))
         self.text = self.TAG_REGEX.sub("", s).strip()
 
-    def add(self, tag: str):
+    def add(self, tag: str) -> None:
+        """ add a tag """
         if tag not in self.tags:
             self.changed = True
             self.tags.add(tag)
 
-    def __str__(self):
+    def remove(self, tag: str) -> None:
+        """ remove a tag """
+        if tag in self.tags:
+            self.changed = True
+            self.tags.remove(tag)
+
+    def __str__(self) -> str:
         res = []
         res.append(self.text.strip())
         for tag in self.tags:
@@ -49,47 +52,15 @@ class Comment:
         return (" ".join(res)).strip()
 
 
-def _transactions(
-    account=None, *, age=90, start_date=None, end_date=None, **tx_filter
-) -> Iterable[Transaction]:
-    """extract transactions from MoneyMoney which match the filter
-
-    if start_data is given, it is generated from age
-    if end_data is not give, no end_date will be assumed.
-    other argumens are treated as filter on the transactions. Currently supported:
-    - booked - the transaction is marked as booked or not yet booked
-    - checked - the checkmark is True (or False)
-    - category - the value of the category field matches the given argument
-
-    if account is given, it is expected to be an Account object
-    and only transactions from this account will be fetched.
-    """
-
-    if start_date is None:
-        start_date = datetime.date.today() - datetime.timedelta(days=age)
-    cmd = []
-    cmd += ['tell application "MoneyMoney" to export transactions']
-    if account is not None:
-        cmd += [f'from account "{account.account_number}"']
-    cmd += [f'from date "{start_date.strftime("%d/%m/%Y")}"']
-    if end_date is not None:
-        cmd += [f'to date "{end_date.strftime("%d/%m/%Y")}"']
-    cmd += ['as "plist"']
-    res = run_apple_script(" ".join(cmd))
-    tx_data = plistlib.loads(res)
-    for tx_data in tx_data.get("transactions", []):
-        tx = Transaction(account, tx_data)
-        if tx.pass_filter(**tx_filter):
-            yield tx
-
-
 class _Base(abc.ABC):
+    """ Base class for Transactions and portfolio positions """
     def __init__(self, account: Account, data):
         self.account = account
+        self._backend = account._backend
         self.data = self.normalize(data)
 
-    @classmethod
-    def normalize(cls, data):
+    @staticmethod
+    def normalize(data: Dict[str, Any]) -> Dict[str, Any]:
         res = {}
         for name, value in data.items():
             if isinstance(value, datetime.datetime):
@@ -101,9 +72,13 @@ class _Base(abc.ABC):
             res[name] = value
         return res
 
-    def __getattr__(self, name):
+    def __getattr__(self, name: str) -> Any:
         if name not in self.ATTRIBUTES:
             raise AttributeError(name)
+        return self.data.get(name, None)
+
+    def get(self, name: str) -> Any:
+        """ similar to getattr, but never raises an exception """
         return self.data.get(name, None)
 
     def __repr__(self):
@@ -148,25 +123,16 @@ class Transaction(_Base):
         "valueDate",
     ]
 
-
-    def set_field(self, name: str, value: str):
+    def set_field(self, name: str, value: str) -> None:
         assert name in self.ATTRIBUTES
         txid = self.data["id"]
-        cmd = " ".join(
-            [
-                f'tell application "{MAC_APP_NAME}"',
-                f"to set transaction id {txid}",
-                f'{name} to "{value}"',
-            ]
-        )
-        run_apple_script(cmd)
-
+        self._backend.set_transaction_field(txid, name, value)
 
     @property
     def payee(self) -> str:
         return self.account_number or self.name
 
-    def pass_filter(self, *, booked=None, checked=None, category=None):
+    def pass_filter(self, *, booked=None, checked=None, category=None) -> bool:
         if booked is not None and self.booked != booked:
             return False
         if checked is not None and self.checkmark != checked:
@@ -195,7 +161,8 @@ class Transaction(_Base):
 
 
 class Account:
-    def __init__(self, data):
+    def __init__(self, backend: BackendInterface, data):
+        self._backend = backend
         self.data = data
 
     @property
@@ -207,56 +174,142 @@ class Account:
         return self.data["accountNumber"]
 
     @property
-    def balance(self):
+    def balance(self) -> float:
         return self.data["balance"][0][0]
 
     @property
-    def currency(self):
+    def currency(self) -> str:
         return self.data["balance"][0][1]
 
     @property
-    def is_portfolio(self):
+    def is_portfolio(self) -> bool:
         return self.data["portfolio"]
 
-    def transactions(self, *args, **kwargs):
-        if not self.is_portfolio:
-            return _transactions(account=self, *args, **kwargs)
-        return []
+    def transactions(self, age=90, start_date=None, end_date=None, **tx_filter) -> Iterable[Transaction]:
+        """extract transactions from the account which match the filter
+
+        if start_data is given, it is generated from age
+        if end_data is not give, no end_date will be assumed.
+        other argumens are treated as filter on the transactions. Currently supported:
+        - booked - the transaction is marked as booked or not yet booked
+        - checked - the checkmark is True (or False)
+        - category - the value of the category field matches the given argument
+        """
+        if self.is_portfolio:
+            return
+
+        if start_date is None:
+            start_date = datetime.date.today() - datetime.timedelta(days=age)
+
+        for tx_data in self._backend.get_transactions(self.account_number, start_date, end_date):
+            tx = Transaction(self, tx_data)
+            if tx.pass_filter(**tx_filter):
+                yield tx
 
     def positions(self) -> Iterable[Position]:
         """extract positions from a portfolio """
         if not self.is_portfolio:
             return
-        cmd = []
-        cmd += ['tell application "MoneyMoney" to export portfolio']
-        cmd += [f'from account "{self.account_number}"']
-        cmd += ['as "plist"']
-
-        res = run_apple_script(" ".join(cmd))
-        tx_data = plistlib.loads(res)
-        for tx_data in tx_data.get("portfolio", []):
+        for tx_data in self._backend.get_positions(self.account_number):
             yield Position(self, tx_data)
 
     def __repr__(self):
         return json.dumps(self.data, separators=(",", ":"), default=serialize)
 
 
+class BackendInterface(abc.ABC):
+    """ generoc inteface for a MoneyMoney Backend """
+    # pylint: disable=unused-argument
+
+    @abc.abstractmethod
+    def get_accounts(self):
+        ...
+
+    @abc.abstractmethod
+    def get_transactions(self, account: str, start_date: datetime.date, end_date: Optional[datetime.date]):
+        ...
+
+    @abc.abstractmethod
+    def get_positions(self, account: str):
+        ...
+
+    @abc.abstractmethod
+    def set_transaction_field(self, txid: str, name: str, value: str):
+        ...
+
+
+class Backend(BackendInterface):
+    MAC_APP_NAME = "MoneyMoney"
+
+    @staticmethod
+    def run_apple_script(script: str) -> bytes:
+        return utils.applescript(script)
+
+    def get_accounts(self) -> List[Dict[str, Any]]:
+        script = f'tell application "{self.MAC_APP_NAME}" to export accounts'
+        data = self.run_apple_script(script)
+        return plistlib.loads(data)
+
+    def get_transactions(self, account: str, start_date, end_date):
+        cmd = []
+        cmd += [f'tell application "{self.MAC_APP_NAME}" to export transactions']
+        cmd += [f'from account "{account}"']
+        cmd += [f'from date "{start_date.strftime("%d/%m/%Y")}"']
+        if end_date is not None:
+            cmd += [f'to date "{end_date.strftime("%d/%m/%Y")}"']
+        cmd += ['as "plist"']
+        data = self.run_apple_script(" ".join(cmd))
+        return plistlib.loads(data).get("transactions", [])
+
+    def get_positions(self, account: str):
+        cmd = []
+        cmd += [f'tell application "{self.MAC_APP_NAME}" to export portfolio']
+        cmd += [f'from account "{account}"']
+        cmd += ['as "plist"']
+
+        res = self.run_apple_script(" ".join(cmd))
+        tx_data = plistlib.loads(res)
+        return tx_data.get("portfolio", [])
+
+    def set_transaction_field(self, txid: str, name: str, value: str):
+        cmd = [
+            f'tell application "{self.MAC_APP_NAME}"',
+            f"to set transaction id {txid}",
+            f'{name} to "{value}"',
+        ]
+        self.run_apple_script(" ".join(cmd))
+
+
 class MoneyMoney:
-    def __init__(self):
-        res = run_apple_script('tell application "MoneyMoney" to export accounts')
-        # convert res to a python form .. this is ugly
-        self.data = plistlib.loads(res)
+    """ An interface to the MoneyMoney app """
+    def __init__(self, backend: BackendInterface = Backend()):
+        self._backend = backend
+        self.data = self._backend.get_accounts()
 
     def _accounts(self) -> Iterable[Account]:
+        """ return all accounts """
         for account in self.data:
             if account.get("group") is not True:
-                yield Account(account)
+                yield Account(self._backend, account)
 
     def accounts(self) -> Iterable[Account]:
         return (account for account in self._accounts() if account.is_portfolio is False)
 
+    def account(self, name: str) -> Optional[Account]:
+        for account in self.accounts():
+            if account.name == name:
+                return account
+        return None
+
     def portfolios(self) -> Iterable[Account]:
         return (account for account in self._accounts() if account.is_portfolio is True)
 
+    def portfolio(self, name: str) -> Optional[Account]:
+        for portfolio in self.portfolios():
+            if portfolio.name == name:
+                return portfolio
+        return None
+
     def transactions(self, *args, **kwargs):
-        return _transactions(account=None, *args, **kwargs)
+        for account in self.accounts():
+            yield from account.transactions(*args, **kwargs)
