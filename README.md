@@ -35,3 +35,7 @@ for account in instance.portfolios():
     for p in account.positions():
         print(f"Have {p.quantity} {p.type}s from '{p.name}' at price {p.price} {p.currencyOfPrice}")
 ```
+
+---
+
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=MirkoDziadzka_py-money&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=MirkoDziadzka_py-money)
