@@ -40,7 +40,7 @@ for account in instance.accounts():
     for tx in account.transactions(age=30, booked=True, checked=False):
         assert tx.booked and not tx.checkmark
         print(
-            f"Found new transaction: {account.name} {tx.bookingDate} {tx.amount:10.2f} {tx.currency} {tx.name}"
+            f"Found new transaction: {tx.id} {account.name} {tx.bookingDate} {tx.amount:10.2f} {tx.currency} {tx.name}"
         )
         tx.set_checkmark(value=True)  # mark this as seen
 

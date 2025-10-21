@@ -113,18 +113,23 @@ class Transaction(_Base):
         "bookingText",
         "category",
         "checkmark",
+        "comment",
         "creditorId",
         "currency",
         "endToEndReference",
+        "id",
         "mandateReference",
         "name",
         "purpose",
-        "comment",
         "valueDate",
+    ]
+    READ_ONLY_ATTRIBUTES = [
+        "id"
     ]
 
     def set_field(self, name: str, value: str) -> None:
         assert name in self.ATTRIBUTES
+        assert name not in self.READ_ONLY_ATTRIBUTES
         txid = self.data["id"]
         self._backend.set_transaction_field(txid, name, value)
 
