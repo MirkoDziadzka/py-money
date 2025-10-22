@@ -21,5 +21,5 @@ setuptools.setup(
         "License :: OSI Approved :: BSD License",
         "Operating System :: MacOS :: MacOS X",
     ],
-    python_requires=">=3.8",
+    python_requires=">=3.9",
 )
