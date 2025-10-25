@@ -24,7 +24,7 @@ class Comment:
 
     def __init__(self, s: Optional[str]):
         self.text = ""
-        self.tags : Set[str] = set()
+        self.tags: Set[str] = set()
         self.parse(s or "")
         self.changed = False
 
@@ -55,6 +55,7 @@ class Comment:
 
 class _Base(abc.ABC):
     """ Base class for Transactions and portfolio positions """
+
     def __init__(self, account: Account, data):
         self.account = account
         self._backend = account._backend
@@ -67,7 +68,7 @@ class _Base(abc.ABC):
             if name in cls.IGNORED_ATTRIBUTES:
                 continue
             if name not in cls.ATTRIBUTES:
-                logging.debug(f" unknown attribute {name} : {value}")
+                logging.debug(" unknown attribute %s : %s", name, value)
             if isinstance(value, datetime.datetime):
                 value = value.date()
                 if value <= datetime.date(year=1970, month=1, day=2):
@@ -88,6 +89,7 @@ class _Base(abc.ABC):
 
     def __repr__(self):
         return json.dumps(self.data, separators=(",", ":"), default=serialize)
+
 
 class Position(_Base):
     ATTRIBUTES = [
@@ -181,6 +183,7 @@ class Transaction(_Base):
         if c.changed:
             self.set_field("comment", self.data["comment"])
 
+
 class Category:
     ATTRIBUTES = [
         "id",
@@ -213,7 +216,7 @@ class Category:
             if name in self.IGNORED_ATTRIBUTES:
                 continue
             if name not in self.ATTRIBUTES:
-                logging.debug(f"unknown attribute {name} : {value}")
+                logging.debug("unknown attribute %s : %s", name, value)
             if isinstance(value, datetime.datetime):
                 value = value.date()
                 if value <= datetime.date(year=1970, month=1, day=2):
@@ -223,7 +226,6 @@ class Category:
 
     def __repr__(self):
         return json.dumps(self.data, separators=(",", ":"), default=serialize)
-
 
 
 class Account:
@@ -239,7 +241,6 @@ class Account:
     IGNORED_ATTRIBUTES = [
         "icon",
     ]
-
 
     def __init__(self, backend: BackendInterface, data):
         self._backend = backend
@@ -272,7 +273,7 @@ class Account:
             if name in cls.IGNORED_ATTRIBUTES:
                 continue
             if name not in cls.ATTRIBUTES:
-                logging.debug(f"unknown attribute {name} : {value}")
+                logging.debug("unknown attribute %s : %s", name, value)
             if isinstance(value, datetime.datetime):
                 value = value.date()
                 if value <= datetime.date(year=1970, month=1, day=2):
@@ -390,6 +391,7 @@ class Backend(BackendInterface):
 
 class MoneyMoney:
     """ An interface to the MoneyMoney app """
+
     def __init__(self, backend: BackendInterface = Backend()):
         self._backend = backend
         self.data = self._backend.get_accounts()

@@ -17,6 +17,7 @@ TESTDIR = os.path.dirname(__file__)
 
 class MockedBackend(BackendInterface):
     """ Mock for the actual MoneyMoney backend."""
+
     def __init__(self, data):
         self.data = data
 
