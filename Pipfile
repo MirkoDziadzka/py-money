@@ -12,8 +12,14 @@ ruff = "*"
 pytest-cov = "*"
 pyyaml = "*"
 types-pyyaml = "*"
+hypothesis = "*"
+pytest-xdist = "*"
+pytest-mock = "*"
+pytest-benchmark = "*"
+flake8-pyproject = "*"
 
 [packages]
+autopep8 = "*"
 
 [requires]
 python_version = "3.10"

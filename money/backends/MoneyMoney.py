@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import datetime
+import logging
 import plistlib
 import json
 import re
@@ -23,7 +24,7 @@ class Comment:
 
     def __init__(self, s: Optional[str]):
         self.text = ""
-        self.tags : Set[str] = set()
+        self.tags: Set[str] = set()
         self.parse(s or "")
         self.changed = False
 
@@ -54,15 +55,20 @@ class Comment:
 
 class _Base(abc.ABC):
     """ Base class for Transactions and portfolio positions """
+
     def __init__(self, account: Account, data):
         self.account = account
         self._backend = account._backend
         self.data = self.normalize(data)
 
-    @staticmethod
-    def normalize(data: Dict[str, Any]) -> Dict[str, Any]:
+    @classmethod
+    def normalize(cls, data: Dict[str, Any]) -> Dict[str, Any]:
         res = {}
         for name, value in data.items():
+            if name in cls.IGNORED_ATTRIBUTES:
+                continue
+            if name not in cls.ATTRIBUTES:
+                logging.debug(" unknown attribute %s : %s", name, value)
             if isinstance(value, datetime.datetime):
                 value = value.date()
                 if value <= datetime.date(year=1970, month=1, day=2):
@@ -84,8 +90,11 @@ class _Base(abc.ABC):
     def __repr__(self):
         return json.dumps(self.data, separators=(",", ":"), default=serialize)
 
+
 class Position(_Base):
     ATTRIBUTES = [
+        "id",
+        "accountUuid",
         "name",
         "market",  # Xetra, Tradegate, ...
         "type",  # share, bond, ...
@@ -102,9 +111,15 @@ class Position(_Base):
         "tradeTimstamp",
     ]
 
+    IGNORED_ATTRIBUTES = [
+        "icon",
+    ]
+
 
 class Transaction(_Base):
     ATTRIBUTES = [
+        "id",
+        "accountUuid",
         "accountNumber",
         "amount",
         "bankCode",
@@ -125,6 +140,10 @@ class Transaction(_Base):
     ]
     READ_ONLY_ATTRIBUTES = [
         "id"
+    ]
+
+    IGNORED_ATTRIBUTES = [
+        "icon",
     ]
 
     def set_field(self, name: str, value: str) -> None:
@@ -165,10 +184,67 @@ class Transaction(_Base):
             self.set_field("comment", self.data["comment"])
 
 
+class Category:
+    ATTRIBUTES = [
+        "id",
+        "name",
+        "parentId",
+    ]
+    IGNORED_ATTRIBUTES = [
+        "icon",
+    ]
+
+    def __init__(self, account: Account, data):
+        self.account = account
+        self.data = self.normalize(data)
+
+    @property
+    def name(self) -> str:
+        return self.data["name"]
+
+    @property
+    def id(self) -> str:
+        return self.data.get("id") or self.data.get("uuid", "")
+
+    @property
+    def parent_id(self) -> Optional[str]:
+        return self.data.get("parentId")
+
+    def normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        res = {}
+        for name, value in data.items():
+            if name in self.IGNORED_ATTRIBUTES:
+                continue
+            if name not in self.ATTRIBUTES:
+                logging.debug("unknown attribute %s : %s", name, value)
+            if isinstance(value, datetime.datetime):
+                value = value.date()
+                if value <= datetime.date(year=1970, month=1, day=2):
+                    continue
+            res[name] = value
+        return res
+
+    def __repr__(self):
+        return json.dumps(self.data, separators=(",", ":"), default=serialize)
+
+
 class Account:
+    ATTRIBUTES = [
+        "id",
+        "accountUuid",
+        "name",
+        "accountNumber",
+        "balance",
+        "currency",
+        "portfolio",
+    ]
+    IGNORED_ATTRIBUTES = [
+        "icon",
+    ]
+
     def __init__(self, backend: BackendInterface, data):
         self._backend = backend
-        self.data = data
+        self.data = self.normalize(data)
 
     @property
     def name(self) -> str:
@@ -189,6 +265,23 @@ class Account:
     @property
     def is_portfolio(self) -> bool:
         return self.data["portfolio"]
+
+    @classmethod
+    def normalize(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        res = {}
+        for name, value in data.items():
+            if name in cls.IGNORED_ATTRIBUTES:
+                continue
+            if name not in cls.ATTRIBUTES:
+                logging.debug("unknown attribute %s : %s", name, value)
+            if isinstance(value, datetime.datetime):
+                value = value.date()
+                if value <= datetime.date(year=1970, month=1, day=2):
+                    continue
+            elif name in ("categoryId",):
+                continue
+            res[name] = value
+        return res
 
     def transactions(self, age=90, start_date=None, end_date=None, **tx_filter) -> Iterable[Transaction]:
         """extract transactions from the account which match the filter
@@ -242,6 +335,10 @@ class BackendInterface(abc.ABC):
     def set_transaction_field(self, txid: str, name: str, value: str):
         ...
 
+    @abc.abstractmethod
+    def get_categories(self):
+        ...
+
 
 class Backend(BackendInterface):
     MAC_APP_NAME = "MoneyMoney"
@@ -276,6 +373,13 @@ class Backend(BackendInterface):
         tx_data = plistlib.loads(res)
         return tx_data.get("portfolio", [])
 
+    def get_categories(self):
+        cmd = []
+        cmd += [f'tell application "{self.MAC_APP_NAME}" to export categories']
+        # cmd += ['as "plist"']
+        res = self.run_apple_script(" ".join(cmd))
+        return plistlib.loads(res)
+
     def set_transaction_field(self, txid: str, name: str, value: str):
         cmd = [
             f'tell application "{self.MAC_APP_NAME}"',
@@ -287,9 +391,11 @@ class Backend(BackendInterface):
 
 class MoneyMoney:
     """ An interface to the MoneyMoney app """
+
     def __init__(self, backend: BackendInterface = Backend()):
         self._backend = backend
         self.data = self._backend.get_accounts()
+        self._categories = self._backend.get_categories()
 
     def _accounts(self) -> Iterable[Account]:
         """ return all accounts """
@@ -318,3 +424,7 @@ class MoneyMoney:
     def transactions(self, *args, **kwargs):
         for account in self.accounts():
             yield from account.transactions(*args, **kwargs)
+
+    def categories(self) -> Iterable[Category]:
+        for category in self._categories:
+            yield Category(self, category)

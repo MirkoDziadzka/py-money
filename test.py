@@ -1,9 +1,12 @@
 import csv
 import datetime
+import logging
 
 import money
 
 instance = money.MoneyMoney()
+
+logging.basicConfig(level=logging.INFO)
 
 
 FILENAME = "out.csv"
@@ -59,6 +62,10 @@ for tx in instance.transactions(age=30, booked=True, category=category):
     print(
         f"Found new transaction: {tx.bookingDate} {tx.amount:10.2f} {tx.currency} {tx.name}"
     )
+
+print("Show all categories")
+for category in instance.categories():
+    print(category)
 
 print(f"Convert all transactions to csv '{FILENAME}'")
 

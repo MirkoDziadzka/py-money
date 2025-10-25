@@ -17,6 +17,7 @@ TESTDIR = os.path.dirname(__file__)
 
 class MockedBackend(BackendInterface):
     """ Mock for the actual MoneyMoney backend."""
+
     def __init__(self, data):
         self.data = data
 
@@ -39,6 +40,9 @@ class MockedBackend(BackendInterface):
                         tx["checkmark"] = value == "on"
                     else:
                         raise NotImplementedError
+
+    def get_categories(self):
+        return self.data.get("categories", [])
 
 
 @pytest.fixture

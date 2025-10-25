@@ -4,45 +4,135 @@ accounts:
 - name: "Deutsche Bank"
   portfolio: false
   accountNumber: A1111111111
+  balance: [[1500.50, "EUR"]]
+  currency: "EUR"
 - name: "Postbank"
   portfolio: false
   accountNumber: A2222222222
+  balance: [[2500.75, "EUR"]]
+  currency: "EUR"
 - name: "Comdirect"
   portfolio: true
   accountNumber: P1111111111
+  balance: [[5000.00, "EUR"]]
+  currency: "EUR"
 
 transactions:
   A1111111111:
   - id: 1001
-    accountNumber: DE011001001001001001
-    bankCode: FOOBAR
+    accountNumber: A1111111111
+    bankCode: DEUTDEFF
     booked: true
-    amount: 100
+    amount: -100.00
     currency: EUR
     name: Finanzamt
-    booked: true
+    bookingDate: "2024-01-15"
+    valueDate: "2024-01-15"
+    purpose: "Steuerzahlung"
     checkmark: false
+    category: "Steuern"
+    comment: "Q4 Steuern <tag:tax>"
   - id: 1002
-    accountNumber: DE011001001001001001
-    bankCode: FOOBAR
+    accountNumber: A1111111111
+    bankCode: DEUTDEFF
     booked: true
-    amount: 100
+    amount: 2500.00
     currency: EUR
-    name: Finanzamt
+    name: Arbeitgeber GmbH
+    bookingDate: "2024-01-31"
+    valueDate: "2024-01-31"
+    purpose: "Gehalt"
+    checkmark: true
+    category: "Einkommen"
+    comment: "Januar Gehalt <tag:salary>"
+  - id: 1003
+    accountNumber: A1111111111
+    bankCode: DEUTDEFF
     booked: false
+    amount: -50.00
+    currency: EUR
+    name: Supermarkt
+    bookingDate: "2024-02-01"
+    valueDate: "2024-02-01"
+    purpose: "Einkauf"
     checkmark: false
+    category: "Lebensmittel"
+    comment: "Wocheneinkauf"
   A2222222222:
   - id: 2001
-    accountNumber: DE011001001001001001
-    bankCode: FOOBAR
+    accountNumber: A2222222222
+    bankCode: POSTBANK
     booked: true
-    amount: 100
+    amount: -200.00
     currency: EUR
-    name: Finanzamt
+    name: Miete
+    bookingDate: "2024-01-01"
+    valueDate: "2024-01-01"
+    purpose: "Miete Januar"
+    checkmark: true
+    category: "Wohnen"
+    comment: "Miete <tag:rent>"
+  - id: 2002
+    accountNumber: A2222222222
+    bankCode: POSTBANK
     booked: true
+    amount: -80.00
+    currency: EUR
+    name: Stromversorger
+    bookingDate: "2024-01-15"
+    valueDate: "2024-01-15"
+    purpose: "Stromrechnung"
     checkmark: false
+    category: "Wohnen"
+    comment: "Strom <tag:utilities>"
 
 positions:
   P1111111111:
-  - name: Apple
+  - id: "pos_001"
+    name: "Apple Inc."
+    isin: "US0378331005"
+    market: "NASDAQ"
+    type: "share"
+    quantity: 10
+    price: 150.00
+    purchasePrice: 140.00
+    currencyOfPrice: "USD"
+    amount: 1500.00
+    currencyOfAmount: "USD"
+    absoluteProfit: 100.00
+    currencyOfProfit: "USD"
+    relativeProfit: 7.14
+    tradeTimestamp: "2024-01-10"
+  - id: "pos_002"
+    name: "Microsoft Corp."
+    isin: "US5949181045"
+    market: "NASDAQ"
+    type: "share"
+    quantity: 5
+    price: 300.00
+    purchasePrice: 280.00
+    currencyOfPrice: "USD"
+    amount: 1500.00
+    currencyOfAmount: "USD"
+    absoluteProfit: 100.00
+    currencyOfProfit: "USD"
+    relativeProfit: 7.14
+    tradeTimestamp: "2024-01-15"
+
+categories:
+- id: "cat_001"
+  name: "Einkommen"
+  parentId: null
+- id: "cat_002"
+  name: "Wohnen"
+  parentId: null
+- id: "cat_003"
+  name: "Lebensmittel"
+  parentId: null
+- id: "cat_004"
+  name: "Steuern"
+  parentId: null
+- id: "cat_005"
+  name: "Investitionen"
+  parentId: null
 
