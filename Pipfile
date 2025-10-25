@@ -12,6 +12,10 @@ ruff = "*"
 pytest-cov = "*"
 pyyaml = "*"
 types-pyyaml = "*"
+hypothesis = "*"
+pytest-xdist = "*"
+pytest-mock = "*"
+pytest-benchmark = "*"
 
 [packages]
 

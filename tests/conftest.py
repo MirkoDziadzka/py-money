@@ -40,6 +40,9 @@ class MockedBackend(BackendInterface):
                     else:
                         raise NotImplementedError
 
+    def get_categories(self):
+        return self.data.get("categories", [])
+
 
 @pytest.fixture
 def instance() -> MoneyMoney:

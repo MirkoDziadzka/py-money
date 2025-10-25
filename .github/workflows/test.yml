@@ -1,0 +1,78 @@
+name: Test Suite
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: [3.9, 3.10, 3.11, 3.12]
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install pipenv
+      run: |
+        pip install pipenv
+    
+    - name: Install dependencies
+      run: |
+        pipenv install --dev
+    
+    - name: Install package in development mode
+      run: |
+        pipenv run pip install -e .
+    
+    - name: Run unit tests
+      run: |
+        pipenv run pytest tests/ -m "not integration" --cov=money --cov-report=xml
+    
+    - name: Run integration tests (macOS only)
+      if: matrix.os == 'macos-latest'
+      run: |
+        pipenv run pytest tests/ -m "integration" -v
+      continue-on-error: true  # Integration tests may fail if MoneyMoney is not installed
+    
+    - name: Upload coverage to Codecov
+      if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.10'
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+        fail_ci_if_error: false
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    
+    - name: Install pipenv
+      run: |
+        pip install pipenv
+    
+    - name: Install dependencies
+      run: |
+        pipenv install --dev
+    
+    - name: Run linting
+      run: |
+        pipenv run flake8 money/ tests/
+        pipenv run pylint money/ tests/
+        pipenv run ruff check money/ tests/

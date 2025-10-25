@@ -195,6 +195,18 @@ class Category:
         self.account = account
         self.data = self.normalize(data)
 
+    @property
+    def name(self) -> str:
+        return self.data["name"]
+
+    @property
+    def id(self) -> str:
+        return self.data.get("id") or self.data.get("uuid", "")
+
+    @property
+    def parent_id(self) -> Optional[str]:
+        return self.data.get("parentId")
+
     def normalize(self, data: Dict[str, Any]) -> Dict[str, Any]:
         res = {}
         for name, value in data.items():
