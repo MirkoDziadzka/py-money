@@ -6,8 +6,10 @@ They are marked with pytest markers to allow selective execution.
 """
 
 import os
-import pytest
 from datetime import date, timedelta
+
+import pytest
+import yaml
 
 from money import MoneyMoney
 from money.backends.MoneyMoney import Backend
@@ -31,12 +33,16 @@ class TestMoneyMoneyIntegration:
         """Create a MoneyMoney instance with real backend."""
         try:
             return MoneyMoney(backend=real_backend)
-        except Exception as e:
+        except (ConnectionError, RuntimeError, OSError) as e:
             if "Locked database" in str(e):
                 pytest.skip(
                     "MoneyMoney database is locked - please unlock it to run integration tests")
             else:
                 pytest.skip(f"MoneyMoney integration test skipped: {e}")
+        except Exception as e:  # pylint: disable=broad-except
+            pytest.skip(f"MoneyMoney integration test skipped: {e}")
+        # This line should never be reached, but satisfies pylint
+        return None
 
     def test_real_accounts_exist(self, real_instance):
         """Test that we can retrieve real accounts from MoneyMoney."""
@@ -125,12 +131,11 @@ class TestMoneyMoneyMockedIntegration:
         # This test verifies that our mocking system works
         # when the real MoneyMoney app is not available
         from tests.conftest import MockedBackend
-        import yaml
 
         # Load test data
         test_data_path = os.path.join(
             os.path.dirname(__file__), "backend_config.yml")
-        with open(test_data_path, "r") as f:
+        with open(test_data_path, "r", encoding="utf-8") as f:
             data = yaml.safe_load(f)
 
         backend = MockedBackend(data)
@@ -142,3 +147,22 @@ class TestMoneyMoneyMockedIntegration:
 
         categories = list(instance.categories())
         assert len(categories) > 0
+
+    def test_mocked_data_consistency(self):
+        """Test that mocked data is consistent and valid."""
+        from tests.conftest import MockedBackend
+        # Load test data
+        test_data_path = os.path.join(
+            os.path.dirname(__file__), "backend_config.yml")
+        with open(test_data_path, "r", encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+
+        backend = MockedBackend(data)
+        instance = MoneyMoney(backend=backend)
+
+        # Test data consistency
+        accounts = list(instance.accounts())
+        for account in accounts:
+            assert hasattr(account, 'name')
+            assert hasattr(account, 'account_number')
+            assert hasattr(account, 'balance')

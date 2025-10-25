@@ -5,17 +5,18 @@ This module provides utilities to create mock data and test scenarios
 for the MoneyMoney library.
 """
 
-import yaml
 from datetime import date, datetime, timedelta
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
+
+import yaml
 
 from money.backends.MoneyMoney import BackendInterface
 
 
 @dataclass
-class MockTransactionData:
-    """Data class for creating mock transaction data."""
+class MockTransactionCore:
+    """Core transaction data."""
     id: str
     account_number: str
     amount: float
@@ -23,6 +24,11 @@ class MockTransactionData:
     name: str = "Test Transaction"
     booked: bool = True
     checkmark: bool = False
+
+
+@dataclass
+class MockTransactionDetails:
+    """Additional transaction details."""
     category: Optional[str] = None
     comment: str = ""
     booking_date: Optional[date] = None
@@ -30,22 +36,51 @@ class MockTransactionData:
     purpose: str = ""
     bank_code: str = "TEST"
 
+
+@dataclass
+class MockTransactionData:
+    """Data class for creating mock transaction data."""
+    core: MockTransactionCore
+    details: MockTransactionDetails
+
+    @classmethod
+    def create(cls, transaction_id: str, account_number: str, amount: float, **kwargs) -> 'MockTransactionData':
+        """Create a MockTransactionData with simplified parameters."""
+        core = MockTransactionCore(
+            id=transaction_id,
+            account_number=account_number,
+            amount=amount,
+            currency=kwargs.get('currency', 'EUR'),
+            name=kwargs.get('name', 'Test Transaction'),
+            booked=kwargs.get('booked', True),
+            checkmark=kwargs.get('checkmark', False)
+        )
+        details = MockTransactionDetails(
+            category=kwargs.get('category'),
+            comment=kwargs.get('comment', ''),
+            booking_date=kwargs.get('booking_date'),
+            value_date=kwargs.get('value_date'),
+            purpose=kwargs.get('purpose', ''),
+            bank_code=kwargs.get('bank_code', 'TEST')
+        )
+        return cls(core=core, details=details)
+
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary format expected by MoneyMoney backend."""
         return {
-            "id": self.id,
-            "accountNumber": self.account_number,
-            "amount": self.amount,
-            "currency": self.currency,
-            "name": self.name,
-            "booked": self.booked,
-            "checkmark": self.checkmark,
-            "category": self.category,
-            "comment": self.comment,
-            "bookingDate": self.booking_date or date.today(),
-            "valueDate": self.value_date or date.today(),
-            "purpose": self.purpose,
-            "bankCode": self.bank_code,
+            "id": self.core.id,
+            "accountNumber": self.core.account_number,
+            "amount": self.core.amount,
+            "currency": self.core.currency,
+            "name": self.core.name,
+            "booked": self.core.booked,
+            "checkmark": self.core.checkmark,
+            "category": self.details.category,
+            "comment": self.details.comment,
+            "bookingDate": self.details.booking_date or date.today(),
+            "valueDate": self.details.value_date or date.today(),
+            "purpose": self.details.purpose,
+            "bankCode": self.details.bank_code,
         }
 
 
@@ -168,7 +203,7 @@ class MockDataBuilder:
     def save_to_file(self, filepath: str) -> None:
         """Save the mock data to a YAML file."""
         data = self.build()
-        with open(filepath, 'w') as f:
+        with open(filepath, 'w', encoding='utf-8') as f:
             yaml.dump(data, f, default_flow_style=False)
 
 
@@ -189,8 +224,8 @@ def create_sample_data() -> MockDataBuilder:
 
     # Add sample transactions
     today = date.today()
-    builder.add_transaction("TB123456", MockTransactionData(
-        id="tx001",
+    builder.add_transaction("TB123456", MockTransactionData.create(
+        transaction_id="tx001",
         account_number="TB123456",
         amount=2500.00,
         name="Salary",
@@ -199,8 +234,8 @@ def create_sample_data() -> MockDataBuilder:
         booking_date=today - timedelta(days=1)
     ))
 
-    builder.add_transaction("TB123456", MockTransactionData(
-        id="tx002",
+    builder.add_transaction("TB123456", MockTransactionData.create(
+        transaction_id="tx002",
         account_number="TB123456",
         amount=-100.00,
         name="Grocery Store",
@@ -243,8 +278,8 @@ def create_test_scenarios() -> Dict[str, MockDataBuilder]:
 
     # Add many transactions
     for i in range(100):
-        high_volume.add_transaction("HV001", MockTransactionData(
-            id=f"tx_{i:03d}",
+        high_volume.add_transaction("HV001", MockTransactionData.create(
+            transaction_id=f"tx_{i:03d}",
             account_number="HV001",
             amount=10.00 + i,
             name=f"Transaction {i}",
@@ -288,7 +323,7 @@ class MockBackendFactory:
     @staticmethod
     def create_from_file(filepath: str) -> 'MockedBackend':
         """Create a mock backend from a YAML file."""
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             data = yaml.safe_load(f)
         return MockedBackend(data)
 
